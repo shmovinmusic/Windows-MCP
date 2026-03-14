@@ -18,7 +18,7 @@ pytest                     # Run all tests (if tests/ exists)
 pytest tests/test_foo.py   # Run a single test file
 ```
 
-**Package manager**: UV (not pip). **Python**: 3.13+. **Build backend**: Hatchling.
+**Package manager**: UV (not pip). **Python**: 3.13+. **Build backend**: setuptools. `uvx windows-mcp` runs without installation.
 
 ## Architecture
 
