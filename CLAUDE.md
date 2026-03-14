@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Windows-MCP is a Python MCP (Model Context Protocol) server that bridges AI LLM agents with the Windows OS, enabling direct desktop automation. It exposes 16 tools (App, Shell, Snapshot, Click, Type, Scroll, Move, Shortcut, Wait, Scrape, MultiSelect, MultiEdit, Clipboard, Process, Notification, LocateText) via FastMCP.
+Windows-MCP is a Python MCP (Model Context Protocol) server that bridges AI LLM agents with the Windows OS, enabling direct desktop automation. It exposes 18 tools (App, PowerShell, FileSystem, Snapshot, Click, Type, Scroll, Move, Shortcut, Wait, Scrape, MultiSelect, MultiEdit, Clipboard, Process, Notification, Registry, LocateText) via FastMCP.
 
 ## Build & Development Commands
 
@@ -24,7 +24,7 @@ pytest tests/test_foo.py   # Run a single test file
 
 The codebase follows a layered service architecture under `src/windows_mcp/`:
 
-**Entry point** — `__main__.py`: Registers all 15 MCP tools on a FastMCP server instance. Uses an async lifespan to initialize Desktop, WatchDog, and Analytics services. Each tool function delegates to `Desktop` methods. The `@with_analytics` decorator wraps tools for telemetry.
+**Entry point** — `__main__.py`: Registers all 18 MCP tools on a FastMCP server instance. Uses an async lifespan to initialize Desktop, WatchDog, and Analytics services. Each tool function delegates to `Desktop` methods. The `@with_analytics` decorator wraps tools for telemetry. Supports two modes via `MODE` env var: `local` (default, direct desktop access) and `remote` (proxies to a dashboard endpoint using `API_KEY` + `SANDBOX_ID`). CLI flags: `--transport` (stdio/sse/streamable-http), `--host`, `--port`.
 
 **Desktop service** — `desktop/service.py`: High-level orchestrator. Manages window operations (launch, resize, switch), screenshots, mouse/keyboard actions, and clipboard. Interfaces with Tree service for UI element discovery. `desktop/views.py` defines data models: `DesktopState`, `Window`, `Size`, `BoundingBox`, `Status`.
 
@@ -35,6 +35,10 @@ The codebase follows a layered service architecture under `src/windows_mcp/`:
 **WatchDog** — `watchdog/service.py`: Runs in a separate thread monitoring UI focus changes via UIAutomation events. Notifies the Tree service of focus changes so the accessibility tree stays current.
 
 **Virtual Desktop Manager** — `vdm/core.py`: Tracks which windows belong to which Windows virtual desktop (Win10/11).
+
+**Filesystem service** — `filesystem/service.py`: Structured file operations (read, write, copy, move, delete, list, search, info) exposed via the `FileSystem` tool. Relative paths are resolved against the user's Desktop folder. Max read size is enforced via `MAX_READ_SIZE` in `filesystem/views.py`.
+
+**Auth service** — `auth/service.py`: `AuthClient` handles remote-mode authentication. POSTs `api_key` + `sandbox_id` to the dashboard, receives a `session_token`, then `ProxyClient` uses it as a Bearer token to forward MCP calls to the dashboard's `/api/mcp` endpoint. Retries with exponential backoff on transient failures; fails fast on 4xx errors.
 
 **Analytics** — `analytics.py`: Optional PostHog telemetry (disabled with `ANONYMIZED_TELEMETRY=false` env var). Tracks tool names and errors only, not arguments or outputs.
 
@@ -53,6 +57,9 @@ The codebase follows a layered service architecture under `src/windows_mcp/`:
 - Fuzzy string matching (`thefuzz`) is used for element name matching
 - UI element fetching has retry logic (`THREAD_MAX_RETRIES=3` in tree service)
 - The server supports stdio, SSE, and streamable HTTP transports
+- `bool` tool parameters also accept string `"true"`/`"false"` (agents may send booleans as strings)
+- The `Registry` tool reads/writes the Windows Registry via PowerShell; paths use PowerShell format (e.g. `HKCU:\Software\MyApp`)
+- Remote mode proxies all MCP calls through a dashboard; the local desktop tools are not used in that mode
 
 ## Security Context
 

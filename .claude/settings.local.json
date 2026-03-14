@@ -1,10 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(//c/Users/4312/.claude/**)",
+      "Read(//c/Users/4312/AppData/Roaming/Claude/**)",
+      "Bash(cmd /c \"where gh 2>&1\")"
+    ],
     "additionalDirectories": [
       "c:\\Users\\4312\\AppData\\Roaming\\Claude"
-    ],
-    "allow": [
-      "WebSearch"
     ]
   }
 }
