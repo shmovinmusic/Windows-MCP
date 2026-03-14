@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\Users\\4312\\AppData\\Roaming\\Claude"
+    ],
+    "allow": [
+      "WebSearch"
+    ]
+  }
+}
